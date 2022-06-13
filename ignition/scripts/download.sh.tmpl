@@ -11,10 +11,10 @@ case $(uname -s) in
     wget https://github.com/stedolan/jq/releases/download/jq-1.6/jq-osx-amd64 -O ${installer_workspace}/jq > /dev/null 2>&1
     ;;
   Linux)
-    wget -r -l1 -np -nd -q ${installer_url} -P ${installer_workspace} -A 'openshift-install-linux-4*.tar.gz'
-    tar zxvf ${installer_workspace}/openshift-install-linux-4*.tar.gz -C ${installer_workspace}
-    wget -r -l1 -np -nd -q ${installer_url} -P ${installer_workspace} -A 'openshift-client-linux-4*.tar.gz'
-    tar zxvf ${installer_workspace}/openshift-client-linux-4*.tar.gz -C ${installer_workspace}
+    wget -q ${installer_url}/openshift-install-linux.tar.gz -P ${installer_workspace}
+    tar zxvf ${installer_workspace}/openshift-install-linux.tar.gz -C ${installer_workspace}
+    wget -q ${installer_url}/openshift-client-linux.tar.gz -P ${installer_workspace}
+    tar zxvf ${installer_workspace}/openshift-client-linux.tar.gz -C ${installer_workspace}
     wget https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 -O ${installer_workspace}/jq
     ;;
   *)
