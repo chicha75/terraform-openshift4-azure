@@ -4,6 +4,10 @@ resource "azurerm_storage_account" "ignition" {
   location                 = var.azure_region
   account_tier             = "Standard"
   account_replication_type = "LRS"
+
+  tags = {
+    environment = "staging"
+  }
 }
 
 data "azurerm_storage_account_sas" "ignition" {
@@ -36,7 +40,10 @@ data "azurerm_storage_account_sas" "ignition" {
     process = false
     write   = false
     update  = false
+    tag     = false
+    filter  = false
   }
+
 }
 
 resource "azurerm_storage_container" "ignition" {
