@@ -9,7 +9,7 @@ locals {
 resource "azurerm_network_interface" "master" {
   count = var.instance_count
 
-  name                = "${var.cluster_id}-master${count.index}-nic"
+  name                = "nic-${var.cluster_id}-master${count.index}"
   location            = var.region
   resource_group_name = var.resource_group_name
 
@@ -84,7 +84,7 @@ resource "azurerm_network_interface_backend_address_pool_association" "master_in
 resource "azurerm_linux_virtual_machine" "master" {
   count = var.instance_count
 
-  name                  = "${var.cluster_id}-master-${count.index}"
+  name                  = "vm${var.cluster_id}-master-${count.index}"
   location              = var.region
   zone                  = length(var.availability_zones) > 1 ? var.availability_zones[count.index] : var.availability_zones[0]
   resource_group_name   = var.resource_group_name
@@ -103,7 +103,7 @@ resource "azurerm_linux_virtual_machine" "master" {
   }
 
   os_disk {
-    name                 = "${var.cluster_id}-master-${count.index}_OSDisk" # os disk name needs to match cluster-api convention
+    name                 = "osdisk${var.cluster_id}-master-${count.index}" # os disk name needs to match cluster-api convention
     caching              = "ReadOnly"
     storage_account_type = var.os_volume_type
     disk_size_gb         = var.os_volume_size
@@ -111,7 +111,7 @@ resource "azurerm_linux_virtual_machine" "master" {
 
   source_image_id = var.vm_image
 
-  //we don't provide a ssh key, because it is set with ignition. 
+  //we don't provide a ssh key, because it is set with ignition.
   //it is required to provide at least 1 auth method to deploy a linux vm
   computer_name = "${var.cluster_id}-master-${count.index}"
   custom_data   = base64encode(var.ignition)

@@ -9,7 +9,7 @@ resource "azurerm_public_ip" "bootstrap_public_ip_v4" {
 
   sku                 = "Standard"
   location            = var.region
-  name                = "${var.cluster_id}-bootstrap-pip-v4"
+  name                = "pip-${var.cluster_id}-bootstrap"
   resource_group_name = var.resource_group_name
   allocation_method   = "Static"
 }
@@ -26,7 +26,7 @@ resource "azurerm_public_ip" "bootstrap_public_ip_v6" {
 
   sku                 = "Standard"
   location            = var.region
-  name                = "${var.cluster_id}-bootstrap-pip-v6"
+  name                = "pip-${var.cluster_id}-bootstrap"
   resource_group_name = var.resource_group_name
   allocation_method   = "Static"
   ip_version          = "IPv6"
@@ -40,7 +40,7 @@ data "azurerm_public_ip" "bootstrap_public_ip_v6" {
 }
 
 resource "azurerm_network_interface" "bootstrap" {
-  name                = "${var.cluster_id}-bootstrap-nic"
+  name                = "nic-${var.cluster_id}-bootstrap"
   location            = var.region
   resource_group_name = var.resource_group_name
 
@@ -117,7 +117,7 @@ resource "azurerm_network_interface_backend_address_pool_association" "internal_
 }
 
 resource "azurerm_linux_virtual_machine" "bootstrap" {
-  name                  = "${var.cluster_id}-bootstrap"
+  name                  = "vm${var.cluster_id}-bootstrap"
   location              = var.region
   resource_group_name   = var.resource_group_name
   network_interface_ids = [azurerm_network_interface.bootstrap.id]
@@ -135,7 +135,7 @@ resource "azurerm_linux_virtual_machine" "bootstrap" {
   }
 
   os_disk {
-    name                 = "${var.cluster_id}-bootstrap_OSDisk" # os disk name needs to match cluster-api convention
+    name                 = "osdisk-${var.cluster_id}-bootstrap" # os disk name needs to match cluster-api convention
     caching              = "ReadWrite"
     storage_account_type = "Premium_LRS"
     disk_size_gb         = 100
@@ -143,7 +143,7 @@ resource "azurerm_linux_virtual_machine" "bootstrap" {
 
   source_image_id = var.vm_image
 
-  computer_name = "${var.cluster_id}-bootstrap-vm"
+  computer_name = "vm${var.cluster_id}-bootstrap"
   custom_data   = base64encode(var.ignition)
 
   boot_diagnostics {
