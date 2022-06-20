@@ -146,6 +146,10 @@ resource "azurerm_linux_virtual_machine" "bootstrap" {
   computer_name = "vm${var.cluster_id}-bootstrap"
   custom_data   = base64encode(var.ignition)
 
+  timeouts {
+    create = "45m"
+  }
+
   boot_diagnostics {
     storage_account_uri = var.storage_account.primary_blob_endpoint
   }
@@ -158,16 +162,3 @@ resource "azurerm_linux_virtual_machine" "bootstrap" {
   ]
 }
 
-resource "azurerm_network_security_rule" "bootstrap_ssh_in" {
-  name                        = "bootstrap_ssh_in"
-  priority                    = 103
-  direction                   = "Inbound"
-  access                      = "Allow"
-  protocol                    = "Tcp"
-  source_port_range           = "*"
-  destination_port_range      = "22"
-  source_address_prefix       = "*"
-  destination_address_prefix  = "*"
-  resource_group_name         = var.resource_group_name
-  network_security_group_name = var.nsg_name
-}

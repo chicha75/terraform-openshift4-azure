@@ -31,3 +31,49 @@ resource "azurerm_network_security_rule" "apiserver_in" {
   resource_group_name         = var.resource_group_name
   network_security_group_name = azurerm_network_security_group.cluster.name
 }
+
+resource "azurerm_network_security_rule" "health" {
+  name                        = "22623"
+  priority                    = 102
+  direction                   = "Inbound"
+  access                      = "Allow"
+  protocol                    = "Tcp"
+  source_port_range           = "*"
+  destination_port_range      = "22623"
+  source_address_prefix       = "*"
+  destination_address_prefix  = "*"
+  resource_group_name         = var.resource_group_name
+  network_security_group_name = azurerm_network_security_group.cluster.name
+}
+
+
+resource "azurerm_network_security_rule" "ssh" {
+  name                        = "ssh"
+  priority                    = 104
+  direction                   = "Inbound"
+  access                      = "Allow"
+  protocol                    = "Tcp"
+  source_port_range           = "*"
+  destination_port_range      = "22"
+  source_address_prefix       = "*"
+  destination_address_prefix  = "*"
+  resource_group_name         = var.resource_group_name
+  network_security_group_name = azurerm_network_security_group.cluster.name
+}
+
+
+/*
+resource "azurerm_network_security_rule" "bootstrap_ssh_in" {
+  name                        = "bootstrap_ssh_in"
+  priority                    = 103
+  direction                   = "Inbound"
+  access                      = "Allow"
+  protocol                    = "Tcp"
+  source_port_range           = "*"
+  destination_port_range      = "22"
+  source_address_prefix       = "*"
+  destination_address_prefix  = "*"
+  resource_group_name         = var.resource_group_name
+  network_security_group_name = var.nsg_name
+}
+*/
