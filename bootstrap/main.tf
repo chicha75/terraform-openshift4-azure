@@ -146,10 +146,6 @@ resource "azurerm_linux_virtual_machine" "bootstrap" {
   computer_name = "vm${var.cluster_id}-bootstrap"
   custom_data   = base64encode(var.ignition)
 
-  timeouts {
-    create = "45m"
-  }
-
   boot_diagnostics {
     storage_account_uri = var.storage_account.primary_blob_endpoint
   }
