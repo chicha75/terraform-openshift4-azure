@@ -30,3 +30,9 @@ resource "azurerm_subnet" "worker_subnet" {
   virtual_network_name = local.virtual_network
   name                 = var.worker_subnet
 }
+
+resource "time_sleep" "wait_for_subnets" {
+  create_duration = "30s"
+
+  depends_on = [azurerm_subnet.worker_subnet, azurerm_subnet.master_subnet]
+}
