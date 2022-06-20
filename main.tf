@@ -96,6 +96,7 @@ module "vnet" {
   emulate_single_stack_ipv6 = var.azure_emulate_single_stack_ipv6
 }
 
+
 module "ignition" {
   source                        = "./ignition"
   depends_on                    = [local_file.azure_sp_json]
@@ -139,12 +140,14 @@ module "ignition" {
   byo_dns                       = var.openshift_byo_dns
 }
 
+
 module "bootstrap" {
   source                 = "./bootstrap"
   resource_group_name    = data.azurerm_resource_group.main.name
   region                 = var.azure_region
   vm_size                = var.azure_bootstrap_vm_type
   vm_image               = azurerm_image.cluster.id
+  #vm_image               = azurerm_shared_image_version.rhcos_version.id
   identity               = azurerm_user_assigned_identity.main.id
   cluster_id             = local.cluster_id
   ignition               = module.ignition.bootstrap_ignition
@@ -172,6 +175,7 @@ module "master" {
   availability_zones     = var.azure_master_availability_zones
   vm_size                = var.azure_master_vm_type
   vm_image               = azurerm_image.cluster.id
+  #vm_image               = azurerm_shared_image_version.rhcos_version.id
   identity               = azurerm_user_assigned_identity.main.id
   ignition               = module.ignition.master_ignition
   elb_backend_pool_v4_id = module.vnet.public_lb_backend_pool_v4_id
@@ -190,6 +194,7 @@ module "master" {
   use_ipv6                  = var.use_ipv6
   emulate_single_stack_ipv6 = var.azure_emulate_single_stack_ipv6
 }
+
 
 module "dns" {
   count                           = var.openshift_byo_dns ? 0 : 1
@@ -287,9 +292,53 @@ resource "azurerm_image" "cluster" {
   }
 }
 
+/*
+resource "azurerm_shared_image_gallery" "sharedimages" {
+  name                = "SharedImages"
+  resource_group_name = data.azurerm_resource_group.main.name
+  location            = var.azure_region
+  description         = "Shared images and things."
+}
+
+resource "azurerm_shared_image" "rhcos" {
+  name                = "rhcos"
+  gallery_name        = azurerm_shared_image_gallery.sharedimages.name
+  resource_group_name = data.azurerm_resource_group.main.name
+  location            = var.azure_region
+  os_type             = "Linux"
+
+  identifier {
+    publisher = "RedHat"
+    offer     = "rhcos"
+    sku       = "Standard"
+  }
+}
+
+resource "azurerm_shared_image_version" "rhcos_version" {
+  name                = var.openshift_version
+  gallery_name        = azurerm_shared_image_gallery.sharedimages.name
+  resource_group_name = data.azurerm_resource_group.main.name
+  location            = var.azure_region
+  image_name          = azurerm_shared_image.rhcos.name
+  managed_image_id    = azurerm_image.cluster.id
+
+  target_region {
+    name                   = var.azure_region
+    regional_replica_count = 1
+    storage_account_type   = "Standard_LRS"
+  }
+}
+*/
+
+resource "time_sleep" "wait_for_masters" {
+  create_duration = "5m"
+
+  depends_on = [ module.master ]
+}
+
 resource "null_resource" "delete_bootstrap" {
   depends_on = [
-    module.master
+    time_sleep.wait_for_masters
   ]
 
   provisioner "local-exec" {
@@ -302,6 +351,6 @@ if [[ "${var.azure_private}" == "false" ]]; then
   az network public-ip delete -g ${data.azurerm_resource_group.main.name} -n ${local.cluster_id}-bootstrap-pip-v4
 fi
 az network nic delete -g ${data.azurerm_resource_group.main.name} -n ${local.cluster_id}-bootstrap-nic
-EOF    
+EOF
   }
 }
