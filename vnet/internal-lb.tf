@@ -56,7 +56,7 @@ resource "azurerm_lb_rule" "internal_lb_rule_api_internal_v4" {
   name                           = "api-internal-v4"
   #resource_group_name            = var.resource_group_name
   protocol                       = "Tcp"
-  #backend_address_pool_id        = azurerm_lb_backend_address_pool.internal_lb_controlplane_pool_v4[0].id
+  backend_address_pool_ids        = [ azurerm_lb_backend_address_pool.internal_lb_controlplane_pool_v4[0].id ]
   loadbalancer_id                = azurerm_lb.internal.id
   frontend_port                  = 6443
   backend_port                   = 6443
@@ -73,7 +73,7 @@ resource "azurerm_lb_rule" "internal_lb_rule_api_internal_v6" {
   name                           = "api-internal-v6"
   #resource_group_name            = var.resource_group_name
   protocol                       = "Tcp"
-  #backend_address_pool_id        = azurerm_lb_backend_address_pool.internal_lb_controlplane_pool_v6[0].id
+  backend_address_pool_ids       = [azurerm_lb_backend_address_pool.internal_lb_controlplane_pool_v6[0].id]
   loadbalancer_id                = azurerm_lb.internal.id
   frontend_port                  = 6443
   backend_port                   = 6443
@@ -90,7 +90,7 @@ resource "azurerm_lb_rule" "internal_lb_rule_sint_v4" {
   name                           = "sint-v4"
   #resource_group_name            = var.resource_group_name
   protocol                       = "Tcp"
-  #backend_address_pool_id        = azurerm_lb_backend_address_pool.internal_lb_controlplane_pool_v4[0].id
+  backend_address_pool_ids       = [azurerm_lb_backend_address_pool.internal_lb_controlplane_pool_v4[0].id]
   loadbalancer_id                = azurerm_lb.internal.id
   frontend_port                  = 22623
   backend_port                   = 22623
@@ -107,7 +107,7 @@ resource "azurerm_lb_rule" "internal_lb_rule_sint_v6" {
   name                           = "sint-v6"
   #resource_group_name            = var.resource_group_name
   protocol                       = "Tcp"
-  #backend_address_pool_id        = azurerm_lb_backend_address_pool.internal_lb_controlplane_pool_v6[0].id
+  backend_address_pool_ids       = [azurerm_lb_backend_address_pool.internal_lb_controlplane_pool_v6[0].id]
   loadbalancer_id                = azurerm_lb.internal.id
   frontend_port                  = 22623
   backend_port                   = 22623
