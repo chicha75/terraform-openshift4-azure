@@ -188,7 +188,7 @@ metadata:
     machine.openshift.io/cluster-api-cluster: ${var.cluster_id}
     machine.openshift.io/cluster-api-machine-role: master
     machine.openshift.io/cluster-api-machine-type: master
-  name: ${var.cluster_id}-master-${count.index}
+  name: vm${var.cluster_id}-master-${count.index}
   namespace: openshift-machine-api
 spec:
   metadata:
@@ -257,7 +257,7 @@ metadata:
     machine.openshift.io/cluster-api-cluster: ${var.cluster_id}
     machine.openshift.io/cluster-api-machine-role: worker
     machine.openshift.io/cluster-api-machine-type: worker
-  name: ${var.cluster_id}-worker-${var.azure_region}${count.index + 1}
+  name: vm${var.cluster_id}-worker-${var.azure_region}${count.index + 1}
   namespace: openshift-machine-api
 spec:
   replicas: ${local.zone_node_replicas[count.index]}
@@ -336,7 +336,7 @@ metadata:
     machine.openshift.io/cluster-api-cluster: ${var.cluster_id}
     machine.openshift.io/cluster-api-machine-role: infra
     machine.openshift.io/cluster-api-machine-type: infra
-  name: ${var.cluster_id}-infra-${var.azure_region}${count.index + 1}
+  name: vm${var.cluster_id}-infra-${var.azure_region}${count.index + 1}
   namespace: openshift-machine-api
 spec:
   replicas: ${local.zone_infra_replicas[count.index]}
@@ -702,16 +702,16 @@ resource "local_file" "configure-ingress-job" {
 data "template_file" "private-cluster-outbound-service" {
   template = <<EOF
 ---
-apiVersion: v1	
-kind: Service	
-metadata:	
-  namespace: openshift-config-managed	
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: openshift-config-managed
   name: outbound-provider
-spec:	
-  type: LoadBalancer	
-  ports:	
-  - port: 27627	
-EOF	
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 27627
+EOF
 }
 
 resource "local_file" "private-cluster-outbound-service" {
