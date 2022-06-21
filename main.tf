@@ -331,7 +331,7 @@ resource "azurerm_shared_image_version" "rhcos_version" {
 */
 
 resource "time_sleep" "wait_for_masters" {
-  create_duration = "5m"
+  create_duration = "3m"
 
   depends_on = [ module.master ]
 }
