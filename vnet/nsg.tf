@@ -5,16 +5,16 @@ resource "azurerm_network_security_group" "cluster" {
 }
 
 resource "azurerm_subnet_network_security_group_association" "master" {
-  count = var.preexisting_network ? 0 : 1
+  count = (var.preexisting_network && ! var.manage_nsg) ? 0 : 1
 
-  subnet_id                 = azurerm_subnet.master_subnet[0].id
+  subnet_id                 = data.azurerm_subnet.master_subnet.id
   network_security_group_id = azurerm_network_security_group.cluster.id
 }
 
 resource "azurerm_subnet_network_security_group_association" "worker" {
-  count = var.preexisting_network ? 0 : 1
+  count = (var.preexisting_network && ! var.manage_nsg) ? 0 : 1
 
-  subnet_id                 = azurerm_subnet.worker_subnet[0].id
+  subnet_id                 = data.azurerm_subnet.worker_subnet.id
   network_security_group_id = azurerm_network_security_group.cluster.id
 }
 

@@ -90,6 +90,7 @@ module "vnet" {
   worker_subnet               = local.azure_compute_subnet
   private                     = var.azure_private
   outbound_udr                = var.azure_outbound_user_defined_routing
+  manage_nsg                  = var.manage_nsg
 
   use_ipv4                  = var.use_ipv4 || var.azure_emulate_single_stack_ipv6
   use_ipv6                  = var.use_ipv6

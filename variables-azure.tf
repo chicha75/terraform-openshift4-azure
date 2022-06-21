@@ -291,3 +291,11 @@ variable "openshift_byo_dns" {
   type        = bool
   default     = false
 }
+
+variable "manage_nsg" {
+  type = bool
+  default = true
+  description = <<EOF
+When using existing network and subnet, associate existing master and worker subnets with a nsg created by terraform.
+EOF
+}

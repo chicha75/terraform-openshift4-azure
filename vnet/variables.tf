@@ -86,3 +86,11 @@ This determined whether User defined routing will be used for egress to Internet
 When false, Standard LB will be used for egress to the Internet.
 EOF
 }
+
+variable "manage_nsg" {
+  type = bool
+  default = true
+  description = <<EOF
+When using existing network and subnet, associate existing master and worker subnets with a nsg created by terraform.
+EOF
+}

@@ -36,3 +36,17 @@ resource "time_sleep" "wait_for_subnets" {
 
   depends_on = [azurerm_subnet.worker_subnet, azurerm_subnet.master_subnet]
 }
+
+data "azurerm_subnet" "worker_subnet" {
+  name                 = var.worker_subnet
+  virtual_network_name = var.virtual_network_name
+  resource_group_name  = var.resource_group_name
+  depends_on = [ azurerm_subnet.worker_subnet ]
+}
+
+data "azurerm_subnet" "master_subnet" {
+  name                 = var.master_subnet
+  virtual_network_name = var.virtual_network_name
+  resource_group_name  = var.resource_group_name
+  depends_on = [ azurerm_subnet.master_subnet ]
+}
