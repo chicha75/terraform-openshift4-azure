@@ -342,6 +342,7 @@ resource "null_resource" "delete_bootstrap" {
   ]
 
   provisioner "local-exec" {
+    interpreter = [ "/bin/bash", "-c" ]
     command = <<EOF
 ./installer-files/openshift-install --dir=./installer-files wait-for bootstrap-complete --log-level=debug
 az vm delete -g ${data.azurerm_resource_group.main.name} -n ${local.cluster_id}-bootstrap -y
