@@ -100,7 +100,7 @@ module "vnet" {
 
 module "ignition" {
   source                        = "./ignition"
-  depends_on                    = [local_file.azure_sp_json]
+  depends_on                    = [local_file.azure_sp_json, module.vnet]
   base_domain                   = var.base_domain
   openshift_version             = var.openshift_version
   master_count                  = var.master_count
@@ -169,6 +169,8 @@ module "bootstrap" {
 }
 
 module "master" {
+  depends_on                    = [module.vnet, module.dns]
+
   source                 = "./master"
   resource_group_name    = data.azurerm_resource_group.main.name
   cluster_id             = local.cluster_id
