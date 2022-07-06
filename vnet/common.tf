@@ -1,6 +1,6 @@
 # Canonical internal state definitions for this module.
 # read only: only locals and data source definitions allowed. No resources or module blocks in this file
-
+/*
 data "azurerm_subnet" "preexisting_master_subnet" {
   count = var.preexisting_network ? 1 : 0
 
@@ -16,7 +16,7 @@ data "azurerm_subnet" "preexisting_worker_subnet" {
   virtual_network_name = var.virtual_network_name
   name                 = var.worker_subnet
 }
-
+*/
 data "azurerm_virtual_network" "preexisting_virtual_network" {
   count = var.preexisting_network ? 1 : 0
 
@@ -32,8 +32,8 @@ locals {
   worker_subnet_cidr_v4 = var.use_ipv4 ? cidrsubnet(var.vnet_v4_cidrs[0], 3, 1) : null  #node subnet is a smaller subnet within the vnet. i.e from /21 to /24
   worker_subnet_cidr_v6 = var.use_ipv6 ? cidrsubnet(var.vnet_v6_cidrs[0], 16, 1) : null #node subnet is a smaller subnet within the vnet. i.e from /48 to /64
 
-  master_subnet_id = var.preexisting_network ? data.azurerm_subnet.preexisting_master_subnet[0].id : azurerm_subnet.master_subnet[0].id
-  worker_subnet_id = var.preexisting_network ? data.azurerm_subnet.preexisting_worker_subnet[0].id : azurerm_subnet.worker_subnet[0].id
+  master_subnet_id = data.azurerm_subnet.master_subnet.id
+  worker_subnet_id = data.azurerm_subnet.worker_subnet.id
 
   virtual_network    = var.preexisting_network ? data.azurerm_virtual_network.preexisting_virtual_network[0].name : azurerm_virtual_network.cluster_vnet[0].name
   virtual_network_id = var.preexisting_network ? data.azurerm_virtual_network.preexisting_virtual_network[0].id : azurerm_virtual_network.cluster_vnet[0].id
