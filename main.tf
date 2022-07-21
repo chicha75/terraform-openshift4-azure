@@ -223,10 +223,7 @@ module "worker" {
   #vm_image               = azurerm_shared_image_version.rhcos_version.id
   identity               = azurerm_user_assigned_identity.main.id
   ignition               = module.ignition.worker_ignition
-  elb_backend_pool_v4_id = module.vnet.public_lb_backend_pool_v4_id
-  elb_backend_pool_v6_id = module.vnet.public_lb_backend_pool_v6_id
-  ilb_backend_pool_v4_id = module.vnet.internal_lb_backend_pool_v4_id
-  ilb_backend_pool_v6_id = module.vnet.internal_lb_backend_pool_v6_id
+  ilb_backend_pool_v4_id = module.vnet.internal_lb_backend_pool_worker_v4_id
   subnet_id              = module.vnet.worker_subnet_id
   instance_count         = var.worker_count
   storage_account        = azurerm_storage_account.cluster

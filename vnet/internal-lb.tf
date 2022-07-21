@@ -151,7 +151,7 @@ resource "azurerm_lb_backend_address_pool" "internal_lb_worker_pool_v4" {
 
   #resource_group_name = var.resource_group_name
   loadbalancer_id     = azurerm_lb.internal.id
-  name                = var.cluster_id
+  name                = "${var.cluster_id}-worker"
 }
 
 resource "azurerm_lb_rule" "internal_lb_rule_workerhttps_v4" {

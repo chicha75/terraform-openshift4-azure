@@ -10,6 +10,10 @@ output "internal_lb_backend_pool_v4_id" {
   value = var.use_ipv4 ? azurerm_lb_backend_address_pool.internal_lb_controlplane_pool_v4[0].id : null
 }
 
+output "internal_lb_backend_pool_worker_v4_id" {
+  value = var.use_ipv4 ? azurerm_lb_backend_address_pool.internal_lb_worker_pool_v4[0].id : null
+}
+
 output "internal_lb_backend_pool_v6_id" {
   value = var.use_ipv6 ? azurerm_lb_backend_address_pool.internal_lb_controlplane_pool_v6[0].id : null
 }
@@ -40,7 +44,7 @@ output "internal_lb_ip_v4_address" {
 
 output "internal_lb_ip_v6_address" {
   // TODO: internal LB should block v4 for better single stack emulation (&& ! var.emulate_single_stack_ipv6)
-  //   but RHCoS initramfs can't do v6 and so fails to ignite. https://issues.redhat.com/browse/GRPA-1343 
+  //   but RHCoS initramfs can't do v6 and so fails to ignite. https://issues.redhat.com/browse/GRPA-1343
   value = var.use_ipv6 ? azurerm_lb.internal.private_ip_addresses[1] : null
 }
 
