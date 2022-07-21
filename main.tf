@@ -58,7 +58,8 @@ data "http" "images" {
 }
 
 locals {
-  cluster_id = "${var.cluster_name}-${random_string.cluster_id.result}"
+  #cluster_id = "${var.cluster_name}-${random_string.cluster_id.result}"
+  cluster_id = "${var.cluster_name}"
   tags = merge(
     {
       "kubernetes.io_cluster.${local.cluster_id}" = "owned"
@@ -95,8 +96,14 @@ module "vnet" {
   use_ipv4                  = var.use_ipv4 || var.azure_emulate_single_stack_ipv6
   use_ipv6                  = var.use_ipv6
   emulate_single_stack_ipv6 = var.azure_emulate_single_stack_ipv6
-}
 
+  internal_lb_ipv4_allocation = var.azure_internal_lb_ipv4_allocation
+  internal_lb_ipv4_address_type = var.azure_internal_lb_ipv4_address_type
+  internal_lb_ipv4_address = var.azure_internal_lb_ipv4_address
+  manage_worker_infra      = var.azure_manage_worker_infra
+  internal_lb_ipv4_worker_address_type = var.azure_internal_lb_ipv4_worker_address_type
+  internal_lb_ipv4_worker_address = var.azure_internal_lb_ipv4_worker_address
+}
 
 module "ignition" {
   source                        = "./ignition"
@@ -139,6 +146,9 @@ module "ignition" {
   proxy_config                  = var.proxy_config
   trust_bundle                  = var.openshift_additional_trust_bundle
   byo_dns                       = var.openshift_byo_dns
+  autoAssignCIDR                = var.azure_autoAssignCIDR
+  loadBalancerType              = var.azure_loadBalancerType
+  manage_worker_infra           = var.azure_manage_worker_infra
 }
 
 
@@ -199,6 +209,38 @@ module "master" {
 }
 
 
+module "worker" {
+  count                  = var.azure_manage_worker_infra ? 1 : 0
+  depends_on                    = [module.vnet, module.dns, module.master]
+
+  source                 = "./worker"
+  resource_group_name    = data.azurerm_resource_group.main.name
+  cluster_id             = local.cluster_id
+  region                 = var.azure_region
+  availability_zones     = var.azure_master_availability_zones
+  vm_size                = var.azure_worker_vm_type
+  vm_image               = azurerm_image.cluster.id
+  #vm_image               = azurerm_shared_image_version.rhcos_version.id
+  identity               = azurerm_user_assigned_identity.main.id
+  ignition               = module.ignition.worker_ignition
+  elb_backend_pool_v4_id = module.vnet.public_lb_backend_pool_v4_id
+  elb_backend_pool_v6_id = module.vnet.public_lb_backend_pool_v6_id
+  ilb_backend_pool_v4_id = module.vnet.internal_lb_backend_pool_v4_id
+  ilb_backend_pool_v6_id = module.vnet.internal_lb_backend_pool_v6_id
+  subnet_id              = module.vnet.worker_subnet_id
+  instance_count         = var.worker_count
+  storage_account        = azurerm_storage_account.cluster
+  os_volume_type         = var.azure_worker_root_volume_type
+  os_volume_size         = var.azure_worker_root_volume_size
+  private                = module.vnet.private
+  outbound_udr           = var.azure_outbound_user_defined_routing
+
+  use_ipv4                  = var.use_ipv4 || var.azure_emulate_single_stack_ipv6
+  use_ipv6                  = var.use_ipv6
+  emulate_single_stack_ipv6 = var.azure_emulate_single_stack_ipv6
+}
+
+
 module "dns" {
   count                           = var.openshift_byo_dns ? 0 : 1
   source                          = "./dns"
@@ -240,11 +282,16 @@ data "azurerm_resource_group" "network" {
 }
 
 resource "azurerm_storage_account" "cluster" {
-  name                     = "cluster${var.cluster_name}${random_string.cluster_id.result}"
+  #name                     = replace("sa${var.cluster_name}${random_string.cluster_id.result}", "/[-+._]/", "")
+  name                     = replace("sa${var.cluster_name}", "/[-+._]/", "")
   resource_group_name      = data.azurerm_resource_group.main.name
+  #resource_group_name = var.azure_network_resource_group_name
   location                 = var.azure_region
   account_tier             = "Standard"
   account_replication_type = "LRS"
+  #lifecycle {
+  #          prevent_destroy = true
+  #  }
 }
 
 resource "azurerm_user_assigned_identity" "main" {
@@ -272,20 +319,28 @@ resource "azurerm_role_assignment" "network" {
 resource "azurerm_storage_container" "vhd" {
   name                 = "vhd"
   storage_account_name = azurerm_storage_account.cluster.name
+  #lifecycle {
+  #          prevent_destroy = true
+  #  }
 }
 
 resource "azurerm_storage_blob" "rhcos_image" {
-  name                   = "rhcos${random_string.cluster_id.result}.vhd"
+  #name                   = "rhcos${random_string.cluster_id.result}.vhd"
+  name                   = "rhcos.vhd"
   storage_account_name   = azurerm_storage_account.cluster.name
   storage_container_name = azurerm_storage_container.vhd.name
   type                   = "Page"
   source_uri             = local.rhcos_image
   metadata               = tomap({ "source_uri" = local.rhcos_image })
+  #lifecycle {
+  #          prevent_destroy = true
+  #  }
 }
 
 resource "azurerm_image" "cluster" {
   name                = local.cluster_id
   resource_group_name = data.azurerm_resource_group.main.name
+  #resource_group_name = var.azure_network_resource_group_name
   location            = var.azure_region
 
   os_disk {
@@ -293,6 +348,9 @@ resource "azurerm_image" "cluster" {
     os_state = "Generalized"
     blob_uri = azurerm_storage_blob.rhcos_image.url
   }
+  #lifecycle {
+  #          prevent_destroy = true
+  #  }
 }
 
 /*
@@ -338,10 +396,11 @@ resource "time_sleep" "wait_for_masters" {
 
   depends_on = [ module.master ]
 }
-
+/*
 resource "null_resource" "delete_bootstrap" {
   depends_on = [
-    time_sleep.wait_for_masters
+    time_sleep.wait_for_masters,
+    module.worker
   ]
 
   provisioner "local-exec" {
@@ -358,3 +417,4 @@ az network nic delete -g ${data.azurerm_resource_group.main.name} -n ${local.clu
 EOF
   }
 }
+*/

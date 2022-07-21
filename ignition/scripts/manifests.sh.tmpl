@@ -3,3 +3,5 @@
 ${installer_workspace}/openshift-install --dir=${installer_workspace} create manifests --log-level=debug
 rm ${installer_workspace}/openshift/99_openshift-cluster-api_worker-machineset-*
 rm ${installer_workspace}/openshift/99_openshift-cluster-api_master-machines-*
+rm ${installer_workspace}/manifests/cluster-ingress-default-ingresscontroller.y*
+rm ${installer_workspace}/manifests/cluster-network-02-config.y*

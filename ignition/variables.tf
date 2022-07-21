@@ -170,3 +170,18 @@ variable "byo_dns" {
   type    = bool
   default = false
 }
+
+variable "autoAssignCIDR" {
+  type = string
+  description = "CIDR for auto assigned ip for ingress router"
+}
+
+variable "loadBalancerType" {
+  type = string
+  description = "default load balancer type (LoadBalancerService)"
+}
+
+variable "manage_worker_infra" {
+  type = bool
+  default = false
+}

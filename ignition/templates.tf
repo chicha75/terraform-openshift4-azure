@@ -113,6 +113,72 @@ resource "local_file" "cluster-infrastructure-02-config" {
   ]
 }
 
+data "template_file" "cluster-network-02-config" {
+  template = <<EOF
+apiVersion: config.openshift.io/v1
+kind: Network
+metadata:
+  name: cluster
+spec:
+  externalIP:
+    autoAssignCIDRs:
+    - ${var.autoAssignCIDR}
+#    policy:
+#      allowedCIDRs:
+#      - 10.21.197.32/29
+  clusterNetwork:
+  - cidr: ${var.cluster_network_cidr}
+    hostPrefix: ${var.cluster_network_host_prefix}
+  networkType: OpenShiftSDN
+  serviceNetwork:
+  - ${var.service_network_cidr}
+EOF
+}
+
+resource "local_file" "cluster-network-02-config" {
+  count = length(var.autoAssignCIDR) > 0 ? 1 : 0
+  content  = data.template_file.cluster-network-02-config.rendered
+  filename = "${local.installer_workspace}/manifests/cluster-network-02-config.yml"
+  depends_on = [
+    null_resource.download_binaries,
+    null_resource.generate_manifests,
+  ]
+}
+
+data "template_file" "cluster-ingress-default-ingresscontroller" {
+  template = <<EOF
+apiVersion: operator.openshift.io/v1
+kind: IngressController
+metadata:
+  creationTimestamp: null
+  name: default
+  namespace: openshift-ingress-operator
+spec:
+  clientTLS:
+    clientCA:
+      name: ""
+    clientCertificatePolicy: ""
+  endpointPublishingStrategy:
+    loadBalancer:
+      scope: Internal
+    type: ${var.loadBalancerType}
+  httpCompression: {}
+  httpErrorCodePages:
+    name: ""
+  tuningOptions: {}
+  unsupportedConfigOverrides: null
+EOF
+}
+
+resource "local_file" "cluster-ingress-default-ingresscontroller" {
+  content  = data.template_file.cluster-ingress-default-ingresscontroller.rendered
+  filename = "${local.installer_workspace}/manifests/cluster-ingress-default-ingresscontroller.yaml"
+  depends_on = [
+    null_resource.download_binaries,
+    null_resource.generate_manifests,
+  ]
+}
+
 data "template_file" "cluster-dns-02-config" {
   template = <<EOF
 apiVersion: config.openshift.io/v1
@@ -228,7 +294,7 @@ spec:
         name: master-user-data
       vmSize: ${var.master_vm_type}
       vnet: ${var.virtual_network_name}
-      %{if length(var.availability_zones) > 1}zone: "${var.availability_zones[count.index]}"%{endif}
+      %{if length(var.availability_zones) > 1}zone: "${var.availability_zones[count.index%length(var.availability_zones)]}"%{endif}
 EOF
 }
 
@@ -241,13 +307,81 @@ resource "local_file" "openshift-cluster-api_master-machines" {
     null_resource.generate_manifests,
   ]
 }
+
+
+resource "local_file" "openshift-cluster-worker-machines" {
+  count    = var.manage_worker_infra ? var.node_count : 0
+  content  = element(data.template_file.openshift-cluster-worker-machines.*.rendered, count.index)
+  filename = "${local.installer_workspace}/openshift/99_openshift-cluster-worker-machines-${count.index}.yaml"
+  depends_on = [
+    null_resource.download_binaries,
+    null_resource.generate_manifests,
+  ]
+}
+
+data "template_file" "openshift-cluster-worker-machines" {
+  count    = var.manage_worker_infra ? var.node_count : 0
+  template = <<EOF
+apiVersion: machine.openshift.io/v1beta1
+kind: Machine
+metadata:
+  creationTimestamp: null
+  labels:
+    machine.openshift.io/cluster-api-cluster: ${var.cluster_id}
+    machine.openshift.io/cluster-api-machine-role: worker
+    machine.openshift.io/cluster-api-machine-type: worker
+  name: vm${var.cluster_id}-worker-${count.index}
+  namespace: openshift-machine-api
+spec:
+  metadata:
+    creationTimestamp: null
+  providerSpec:
+    value:
+      apiVersion: azureproviderconfig.openshift.io/v1beta1
+      credentialsSecret:
+        name: azure-cloud-credentials
+        namespace: openshift-machine-api
+      image:
+        offer: ""
+        publisher: ""
+        resourceID: /resourceGroups/${var.resource_group_name}/providers/Microsoft.Compute/images/${var.cluster_id}
+        sku: ""
+        version: ""
+      internalLoadBalancer: ""
+      kind: AzureMachineProviderSpec
+      location: ${var.azure_region}
+      managedIdentity: ${var.cluster_id}-identity
+      metadata:
+        creationTimestamp: null
+      natRule: null
+      networkResourceGroup: ${var.network_resource_group_name}
+      osDisk:
+        diskSizeGB: ${var.worker_os_disk_size}
+        managedDisk:
+          storageAccountType: Premium_LRS
+        osType: Linux
+      publicIP: false
+      publicLoadBalancer: ""
+      resourceGroup: ${var.resource_group_name}
+      sshPrivateKey: ""
+      sshPublicKey: ""
+      subnet: ${var.compute_subnet}
+      userDataSecret:
+        name: worker-user-data
+      vmSize: ${var.worker_vm_type}
+      vnet: ${var.virtual_network_name}
+      %{if length(var.availability_zones) > 1}zone: "${var.availability_zones[count.index%length(var.availability_zones)]}"%{endif}
+EOF
+}
+
+
 locals {
   zone_node_replicas  = [for idx in range(length(var.availability_zones)) : floor(var.node_count / length(var.availability_zones)) + (idx + 1 > (var.node_count % length(var.availability_zones)) ? 0 : 1)]
   zone_infra_replicas = [for idx in range(length(var.availability_zones)) : floor(var.infra_count / length(var.availability_zones)) + (idx + 1 > (var.infra_count % length(var.availability_zones)) ? 0 : 1)]
 }
 
 data "template_file" "openshift-cluster-api_worker-machineset" {
-  count    = length(var.availability_zones)
+  count    = ! var.manage_worker_infra ? length(var.availability_zones) : 0
   template = <<EOF
 apiVersion: machine.openshift.io/v1beta1
 kind: MachineSet
@@ -316,7 +450,7 @@ EOF
 }
 
 resource "local_file" "openshift-cluster-api_worker-machineset" {
-  count    = length(var.availability_zones)
+  count    = ! var.manage_worker_infra ? length(var.availability_zones) : 0
   content  = element(data.template_file.openshift-cluster-api_worker-machineset.*.rendered, count.index)
   filename = "${local.installer_workspace}/openshift/99_openshift-cluster-api_worker-machineset-${count.index}.yaml"
   depends_on = [

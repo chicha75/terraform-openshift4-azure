@@ -56,6 +56,12 @@ variable "azure_master_root_volume_size" {
   default     = 512
 }
 
+variable "azure_worker_root_volume_type" {
+  type        = string
+  description = "The type of the volume the root block device of master nodes."
+  default     = "Premium_LRS"
+}
+
 variable "azure_base_domain_resource_group_name" {
   type        = string
   description = "The resource group that contains the dns zone used as base domain for the cluster."
@@ -298,4 +304,52 @@ variable "manage_nsg" {
   description = <<EOF
 When using existing network and subnet, associate existing master and worker subnets with a nsg created by terraform.
 EOF
+}
+
+variable "azure_internal_lb_ipv4_allocation" {
+  type = string
+  description = "Static or Dynamic"
+  default = "Dynamic"
+}
+
+variable "azure_internal_lb_ipv4_address_type" {
+  type = string
+  description = "UserFixed or Relative"
+  default = "Relative"
+}
+
+variable "azure_internal_lb_ipv4_address" {
+  type = string
+  description = "An IPv4 if azure_internal_lb_ipv4_address_type is UserDefined or a relative position in the cidr"
+  default = "-2"
+}
+
+variable "azure_internal_lb_ipv4_worker_address_type" {
+  type = string
+  description = "UserFixed or Relative"
+  default = "Relative"
+}
+
+variable "azure_internal_lb_ipv4_worker_address" {
+  type = string
+  description = "An IPv4 if azure_internal_lb_ipv4_address_type is UserDefined or a relative position in the cidr"
+  default = "-2"
+}
+
+variable "azure_autoAssignCIDR" {
+  type = string
+  description = "CIDR for auto assigned ip for ingress router"
+}
+
+
+variable "azure_loadBalancerType" {
+  type = string
+  description = "default load balancer type (LoadBalancerService)"
+  default = "LoadBalancerService"
+}
+
+variable "azure_manage_worker_infra" {
+  type = bool
+  description = "terraorm build the worker infra instead of the machine sets"
+  default = false
 }
