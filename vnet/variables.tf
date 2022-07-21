@@ -94,3 +94,38 @@ variable "manage_nsg" {
 When using existing network and subnet, associate existing master and worker subnets with a nsg created by terraform.
 EOF
 }
+
+variable "internal_lb_ipv4_allocation" {
+  type = string
+  description = "Static or Dynamic"
+  default = "Dynamic"
+}
+
+variable "internal_lb_ipv4_address_type" {
+  type = string
+  description = "UserFixed or Relative"
+  default = "Relative"
+}
+
+variable "internal_lb_ipv4_address" {
+  type = string
+  description = "An IPv4 if azure_internal_lb_ipv4_address_type is UserDefined or a relative position in the cidr"
+  default = "-2"
+}
+
+variable "internal_lb_ipv4_worker_address_type" {
+  type = string
+  description = "UserFixed or Relative"
+  default = "Relative"
+}
+
+variable "internal_lb_ipv4_worker_address" {
+  type = string
+  description = "An IPv4 if azure_internal_lb_ipv4_address_type is UserDefined or a relative position in the cidr"
+  default = "-2"
+}
+
+variable "manage_worker_infra" {
+  type = bool
+  default = false
+}
