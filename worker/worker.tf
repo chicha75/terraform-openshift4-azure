@@ -44,27 +44,7 @@ resource "azurerm_network_interface" "worker" {
     }
   }
 }
-/*
-resource "azurerm_network_interface_backend_address_pool_association" "worker_v4" {
-  // This is required because terraform cannot calculate counts during plan phase completely and therefore the `vnet/public-lb.tf`
-  // conditional need to be recreated. See https://github.com/hashicorp/terraform/issues/12570
-  count = (! var.private || ! var.outbound_udr) ? var.instance_count : 0
 
-  network_interface_id    = element(azurerm_network_interface.worker.*.id, count.index)
-  backend_address_pool_id = var.elb_backend_pool_v4_id
-  ip_configuration_name   = local.ip_v4_configuration_name
-}
-
-resource "azurerm_network_interface_backend_address_pool_association" "worker_v6" {
-  // This is required because terraform cannot calculate counts during plan phase completely and therefore the `vnet/public-lb.tf`
-  // conditional need to be recreated. See https://github.com/hashicorp/terraform/issues/12570
-  count = var.use_ipv6 && (! var.private || ! var.outbound_udr) ? var.instance_count : 0
-
-  network_interface_id    = element(azurerm_network_interface.worker.*.id, count.index)
-  backend_address_pool_id = var.elb_backend_pool_v6_id
-  ip_configuration_name   = local.ip_v6_configuration_name
-}
-*/
 resource "azurerm_network_interface_backend_address_pool_association" "worker_internal_v4" {
   count = var.use_ipv4 ? var.instance_count : 0
 
@@ -72,15 +52,7 @@ resource "azurerm_network_interface_backend_address_pool_association" "worker_in
   backend_address_pool_id = var.ilb_backend_pool_v4_id
   ip_configuration_name   = local.ip_v4_configuration_name
 }
-/*
-resource "azurerm_network_interface_backend_address_pool_association" "worker_internal_v6" {
-  count = var.use_ipv6 ? var.instance_count : 0
 
-  network_interface_id    = element(azurerm_network_interface.worker.*.id, count.index)
-  backend_address_pool_id = var.ilb_backend_pool_v6_id
-  ip_configuration_name   = local.ip_v6_configuration_name
-}
-*/
 resource "azurerm_linux_virtual_machine" "worker" {
   count = var.instance_count
 
@@ -125,9 +97,9 @@ resource "null_resource" "approve_csr" {
   provisioner "local-exec" {
     interpreter = [ "/bin/bash", "-c" ]
     command = <<EOF
-export KUBECONFIG=./installer-files/auth/kubeconfig
-while [ $(./installer-files/oc get csr | grep worker | grep Approved | wc -l) != ${var.instance_count} ]; do
-  ./installer-files/oc get csr -o json | ./installer-files/jq -r '.items[] | select(.status == {} ) | .metadata.name' | xargs ./installer-files/oc adm certificate approve
+export KUBECONFIG=./${terraform.workspace}/installer-files/auth/kubeconfig
+while [ $(./${terraform.workspace}/installer-files/oc get csr | grep worker | grep Approved | wc -l) != ${var.instance_count} ]; do
+  ./${terraform.workspace}/installer-files/oc get csr -o json | ./${terraform.workspace}/installer-files/jq -r '.items[] | select(.status == {} ) | .metadata.name' | xargs ./${terraform.workspace}/installer-files/oc adm certificate approve
   sleep 3
 done
 
