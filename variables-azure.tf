@@ -338,6 +338,7 @@ variable "azure_internal_lb_ipv4_worker_address" {
 
 variable "azure_autoAssignCIDR" {
   type = string
+  default = ""
   description = "CIDR for auto assigned ip for ingress router"
 }
 
