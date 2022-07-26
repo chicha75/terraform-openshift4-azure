@@ -107,7 +107,7 @@ azure_client_secret    = "AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA"
 5. To access your cluster
 
     ```bash
-    $ export KUBECONFIG=$PWD/installer-files/auth/kubeconfig
+    $ export KUBECONFIG=$PWD/workspace/installer-files/auth/kubeconfig
     $ oc get nodes
     NAME                                 STATUS   ROLES          AGE   VERSION
     fs2021-hv0eu-infra-eastus21-6kqlt    Ready    infra,worker   20m   v1.19.0+3b01205
