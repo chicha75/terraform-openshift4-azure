@@ -74,7 +74,7 @@ EOF
 
 resource "local_file" "install_config_yaml" {
   content  = data.template_file.install_config_yaml.rendered
-  filename = "${local.installer_workspace}/install-config.yaml"
+  filename = "${local.installer_terraform}/install-config.yaml"
   depends_on = [
     null_resource.download_binaries,
   ]

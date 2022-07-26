@@ -53,7 +53,8 @@ resource "azurerm_storage_container" "ignition" {
 }
 
 locals {
-  installer_workspace     = "${path.root}/installer-files/"
+  installer_workspace     = "${path.root}/installer-files/${terraform.workspace}/"
+  installer_terraform     = "${path.root}/terraformed-files/${terraform.workspace}/"
   openshift_installer_url = "${var.openshift_installer_url}/${var.openshift_version}"
   cluster_nr              = join("", split("-", var.cluster_id))
 }
@@ -64,6 +65,7 @@ resource "null_resource" "download_binaries" {
     interpreter = [ "/bin/bash", "-c" ]
     command = templatefile("${path.module}/scripts/download.sh.tmpl", {
       installer_workspace  = local.installer_workspace
+      installer_terraform  = local.installer_terraform
       installer_url        = local.openshift_installer_url
       airgapped_enabled    = var.airgapped["enabled"]
       airgapped_repository = var.airgapped["repository"]
@@ -75,7 +77,7 @@ resource "null_resource" "download_binaries" {
 
   provisioner "local-exec" {
     when    = destroy
-    command = "rm -rf ./installer-files"
+    command = "rm -rf installer-files/${terraform.workspace}"
   }
 
 }
@@ -88,15 +90,27 @@ resource "null_resource" "generate_manifests" {
 
   depends_on = [
     null_resource.download_binaries,
-    local_file.install_config_yaml,
+    local_file.install_config_yaml
   ]
 
   provisioner "local-exec" {
     interpreter = [ "/bin/bash", "-c" ]
     command = templatefile("${path.module}/scripts/manifests.sh.tmpl", {
       installer_workspace = local.installer_workspace
+      installer_terraform = local.installer_terraform
     })
   }
+
+  provisioner "local-exec" {
+    when    = destroy
+    command = "true"
+    /*
+    command = templatefile("${path.module}/scripts/destroymanifests.sh.tmpl", {
+      installer_terraform = local.installer_terraform
+    })
+    */
+  }
+
 }
 
 # see templates.tf for generation of yaml config files
@@ -112,6 +126,19 @@ resource "null_resource" "generate_ignition" {
     local_file.openshift-cluster-api_master-machines,
     local_file.openshift-cluster-api_worker-machineset,
     local_file.openshift-cluster-api_infra-machineset,
+    local_file.cluster-ingress-default-ingresscontroller,
+    local_file.openshift-cluster-worker-machines,
+    local_file.cluster-network-02-config,
+    local_file.configure-image-registry-job-serviceaccount,
+    local_file.configure-image-registry-job-clusterrole,
+    local_file.configure-image-registry-job-clusterrolebinding,
+    local_file.configure-image-registry-job,
+    local_file.configure-ingress-job-serviceaccount,
+    local_file.configure-ingress-job-clusterrole,
+    local_file.configure-ingress-job-clusterrolebinding,
+    local_file.configure-ingress-job,
+    local_file.private-cluster-outbound-service,
+    local_file.airgapped_registry_upgrades,
     #local_file.ingresscontroller-default,
     local_file.cloud-creds-secret-kube-system,
     #local_file.cluster-scheduler-02-config,
@@ -123,9 +150,21 @@ resource "null_resource" "generate_ignition" {
     interpreter = [ "/bin/bash", "-c" ]
     command = templatefile("${path.module}/scripts/ignition.sh.tmpl", {
       installer_workspace = local.installer_workspace
+      installer_terraform = local.installer_terraform
       cluster_id          = var.cluster_id
     })
   }
+
+  provisioner "local-exec" {
+    when    = destroy
+    command = "true"
+    /*
+    command = templatefile("${path.module}/scripts/destroyignition.sh.tmpl", {
+      installer_terraform = local.installer_terraform
+    })
+    */
+  }
+
 }
 
 resource "azurerm_storage_blob" "ignition-bootstrap" {
@@ -164,17 +203,20 @@ resource "azurerm_storage_blob" "ignition-worker" {
 data "ignition_config" "master_redirect" {
   replace {
     source = "${azurerm_storage_blob.ignition-master.url}${data.azurerm_storage_account_sas.ignition.sas}"
+    #source = "${azurerm_storage_blob.ignition-master.url}"
   }
 }
 
 data "ignition_config" "bootstrap_redirect" {
   replace {
     source = "${azurerm_storage_blob.ignition-bootstrap.url}${data.azurerm_storage_account_sas.ignition.sas}"
+    #source = "${azurerm_storage_blob.ignition-bootstrap.url}"
   }
 }
 
 data "ignition_config" "worker_redirect" {
   replace {
     source = "${azurerm_storage_blob.ignition-worker.url}${data.azurerm_storage_account_sas.ignition.sas}"
+    #source = "${azurerm_storage_blob.ignition-worker.url}"
   }
 }

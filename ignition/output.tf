@@ -1,3 +1,7 @@
+output "ignition_storage_account" {
+  value = azurerm_storage_account.ignition.id
+}
+
 output "bootstrap_ignition" {
   value = data.ignition_config.bootstrap_redirect.rendered
 }

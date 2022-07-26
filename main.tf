@@ -1,3 +1,4 @@
+/*
 provider "azurerm" {
   features {}
   subscription_id = var.azure_subscription_id
@@ -6,7 +7,7 @@ provider "azurerm" {
   tenant_id       = var.azure_tenant_id
   environment     = var.azure_environment
 }
-
+*/
 resource "random_string" "cluster_id" {
   length  = 5
   special = false
@@ -23,13 +24,13 @@ resource "tls_private_key" "installkey" {
 resource "local_file" "write_private_key" {
   count           = var.openshift_ssh_key == "" ? 1 : 0
   content         = tls_private_key.installkey[0].private_key_pem
-  filename        = "${path.root}/installer-files/artifacts/openshift_rsa"
+  filename        = "${path.root}/installer-files/${terraform.workspace}/sshkey/openshift_rsa"
   file_permission = 0600
 }
 
 resource "local_file" "write_public_key" {
   content         = local.public_ssh_key
-  filename        = "${path.root}/installer-files/artifacts/openshift_rsa.pub"
+  filename        = "${path.root}/installer-files/${terraform.workspace}/sshkey/openshift_rsa.pub"
   file_permission = 0600
 }
 
@@ -151,6 +152,18 @@ module "ignition" {
   manage_worker_infra           = var.azure_manage_worker_infra
 }
 
+/*
+resource "azurerm_storage_account_network_rules" "allowsubnets" {
+  storage_account_id = module.ignition.ignition_storage_account
+
+  default_action             = "Allow"
+  ip_rules                   = ["78.118.134.77"]
+  virtual_network_subnet_ids = [ module.vnet.master_subnet_id, module.vnet.worker_subnet_id ]
+  bypass                     = ["Metrics"]
+  depends_on                 = [ module.vnet, module.ignition ]
+}
+*/
+
 
 module "bootstrap" {
   source                 = "./bootstrap"
@@ -176,10 +189,12 @@ module "bootstrap" {
   use_ipv4                  = var.use_ipv4 || var.azure_emulate_single_stack_ipv6
   use_ipv6                  = var.use_ipv6
   emulate_single_stack_ipv6 = var.azure_emulate_single_stack_ipv6
+
+  #depends_on             = [ azurerm_storage_account_network_rules.allowsubnets ]
 }
 
 module "master" {
-  depends_on                    = [module.vnet, module.dns]
+  depends_on                    = [module.vnet, module.dns/*, azurerm_storage_account_network_rules.allowsubnets*/]
 
   source                 = "./master"
   resource_group_name    = data.azurerm_resource_group.main.name
@@ -211,7 +226,7 @@ module "master" {
 
 module "worker" {
   count                  = var.azure_manage_worker_infra ? 1 : 0
-  depends_on                    = [module.vnet, module.dns, module.master]
+  depends_on                    = [module.vnet, module.dns, module.master/*, azurerm_storage_account_network_rules.allowsubnets*/]
 
   source                 = "./worker"
   resource_group_name    = data.azurerm_resource_group.main.name
@@ -280,7 +295,7 @@ data "azurerm_resource_group" "network" {
 
 resource "azurerm_storage_account" "cluster" {
   #name                     = replace("sa${var.cluster_name}${random_string.cluster_id.result}", "/[-+._]/", "")
-  name                     = replace("sa${var.cluster_name}", "/[-+._]/", "")
+  name                     = replace("saocp4${var.cluster_name}", "/[-+._]/", "")
   resource_group_name      = data.azurerm_resource_group.main.name
   #resource_group_name = var.azure_network_resource_group_name
   location                 = var.azure_region
@@ -334,6 +349,12 @@ resource "azurerm_storage_blob" "rhcos_image" {
   #  }
 }
 
+resource "time_sleep" "wait_for_rhcos_image" {
+  create_duration = "30s"
+
+  depends_on = [ azurerm_storage_blob.rhcos_image ]
+}
+
 resource "azurerm_image" "cluster" {
   name                = local.cluster_id
   resource_group_name = data.azurerm_resource_group.main.name
@@ -345,6 +366,7 @@ resource "azurerm_image" "cluster" {
     os_state = "Generalized"
     blob_uri = azurerm_storage_blob.rhcos_image.url
   }
+  depends_on = [ time_sleep.wait_for_rhcos_image ]
   #lifecycle {
   #          prevent_destroy = true
   #  }
@@ -403,7 +425,7 @@ resource "null_resource" "delete_bootstrap" {
   provisioner "local-exec" {
     interpreter = [ "/bin/bash", "-c" ]
     command = <<EOF
-./installer-files/openshift-install --dir=./installer-files wait-for bootstrap-complete --log-level=debug
+./installer-files/${terraform.workspace}/openshift-install --dir=./installer-files/${terraform.workspace} wait-for bootstrap-complete --log-level=debug
 az vm delete -g ${data.azurerm_resource_group.main.name} -n ${local.cluster_id}-bootstrap -y
 az disk delete -g ${data.azurerm_resource_group.main.name} -n ${local.cluster_id}-bootstrap_OSDisk -y
 if [[ "${var.azure_private}" == "false" ]]; then

@@ -97,9 +97,9 @@ resource "null_resource" "approve_csr" {
   provisioner "local-exec" {
     interpreter = [ "/bin/bash", "-c" ]
     command = <<EOF
-export KUBECONFIG=./${terraform.workspace}/installer-files/auth/kubeconfig
-while [ $(./${terraform.workspace}/installer-files/oc get csr | grep worker | grep Approved | wc -l) != ${var.instance_count} ]; do
-  ./${terraform.workspace}/installer-files/oc get csr -o json | ./${terraform.workspace}/installer-files/jq -r '.items[] | select(.status == {} ) | .metadata.name' | xargs ./${terraform.workspace}/installer-files/oc adm certificate approve
+export KUBECONFIG=./installer-files/${terraform.workspace}/auth/kubeconfig
+while [ $(./installer-files/${terraform.workspace}/oc get csr | grep worker | grep Approved | wc -l) != ${var.instance_count} ]; do
+  ./installer-files/${terraform.workspace}/oc get csr -o json | ./installer-files/${terraform.workspace}/jq -r '.items[] | select(.status == {} ) | .metadata.name' | xargs ./installer-files/${terraform.workspace}/oc adm certificate approve
   sleep 3
 done
 

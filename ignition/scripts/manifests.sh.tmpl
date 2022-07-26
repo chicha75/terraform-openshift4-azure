@@ -1,7 +1,9 @@
 #!/bin/bash
-
+cp -p ${installer_terraform}/install-config.yaml ${installer_workspace}
 ${installer_workspace}/openshift-install --dir=${installer_workspace} create manifests --log-level=debug
 rm ${installer_workspace}/openshift/99_openshift-cluster-api_worker-machineset-*
 rm ${installer_workspace}/openshift/99_openshift-cluster-api_master-machines-*
 rm ${installer_workspace}/manifests/cluster-ingress-default-ingresscontroller.y*
 rm ${installer_workspace}/manifests/cluster-network-02-config.y*
+#mkdir -p ${installer_terraform}
+#(cd ${installer_workspace}; find manifests openshift -type f -name '*.y*ml' | cpio -pduv ${installer_terraform})
