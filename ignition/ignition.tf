@@ -30,8 +30,8 @@ data "azurerm_storage_account_sas" "ignition" {
   #https://github.com/hashicorp/terraform-provider-azurerm/issues/1868#issuecomment-697098941
   #start = timestamp()
   #expiry = timeadd(timestamp(), "24h")
-  start = "20000101"
-  expiry = "20991231"
+  start = "2000-01-01T00:00:00Z"
+  expiry = "2099-12-31T23:59:59Z"
 
   permissions {
     read    = true
