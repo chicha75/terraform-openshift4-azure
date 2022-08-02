@@ -350,7 +350,7 @@ resource "azurerm_storage_blob" "rhcos_image" {
 }
 
 resource "time_sleep" "wait_for_rhcos_image" {
-  create_duration = "30s"
+  create_duration = "2m"
 
   depends_on = [ azurerm_storage_blob.rhcos_image ]
 }
