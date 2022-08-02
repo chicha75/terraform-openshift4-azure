@@ -1,5 +1,5 @@
 resource "azurerm_storage_account" "ignition" {
-  name                     = "ignition${local.cluster_nr}"
+  name                     = "samgnignition${local.cluster_nr}ffrtest"
   resource_group_name      = var.resource_group_name
   location                 = var.azure_region
   account_tier             = "Standard"
